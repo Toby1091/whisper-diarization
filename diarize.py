@@ -63,6 +63,13 @@ if args.stemming:
 else:
     vocal_target = args.audio
 
+# convert audio to mono for NeMo combatibility
+signal, sample_rate = librosa.load(vocal_target, sr=None)
+ROOT = os.getcwd()
+temp_path = os.path.join(ROOT, "temp_outputs")
+os.makedirs(temp_path, exist_ok=True)
+wav_file = os.path.join(temp_path, "mono_file.wav")
+soundfile.write(wav_file, signal, sample_rate, "PCM_24")
 
 # Run on GPU with FP16
 whisper_model = WhisperModel(
@@ -88,7 +95,7 @@ if info.language in wav2vec2_langs:
         language_code=info.language, device=args.device
     )
     result_aligned = whisperx.align(
-        whisper_results, alignment_model, metadata, vocal_target, args.device
+        whisper_results, alignment_model, metadata, wav_file, args.device
     )
     word_timestamps = result_aligned["word_segments"]
     # clear gpu vram
@@ -101,12 +108,7 @@ else:
             word_timestamps.append({"text": word[2], "start": word[0], "end": word[1]})
 
 
-# convert audio to mono for NeMo combatibility
-signal, sample_rate = librosa.load(vocal_target, sr=None)
-ROOT = os.getcwd()
-temp_path = os.path.join(ROOT, "temp_outputs")
-os.makedirs(temp_path, exist_ok=True)
-soundfile.write(os.path.join(temp_path, "mono_file.wav"), signal, sample_rate, "PCM_24")
+
 
 # Initialize NeMo MSDD diarization model
 msdd_model = NeuralDiarizer(cfg=create_config(temp_path)).to(args.device)
