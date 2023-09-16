@@ -10,6 +10,7 @@ from nemo.collections.asr.models.msdd_models import NeuralDiarizer
 from deepmultilingualpunctuation import PunctuationModel
 import re
 import logging
+import json
 
 mtypes = {'cpu': 'int8', 'cuda': 'float16'}
 
@@ -167,5 +168,9 @@ with open(f"{args.audio[:-4]}.txt", "w", encoding="utf-8-sig") as f:
 
 with open(f"{args.audio[:-4]}.srt", "w", encoding="utf-8-sig") as srt:
     write_srt(ssm, srt)
+
+# Write results of Whisper to file to be able to access per-phrase timestamps
+with open(f"{args.audio[:-4]}.json", "w", encoding="utf-8-sig") as json_file:
+    json.dump(whisper_results, json_file, indent=4)
 
 cleanup(temp_path)
